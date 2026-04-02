@@ -1,0 +1,77 @@
+import streamlit as st
+
+
+# ──────────────────────────────────────────────
+# 계산 로직 (기존 로직 유지)
+# ──────────────────────────────────────────────
+def calculate(total_amount: float, people_count: int, tip_rate: float):
+    """
+    회비를 계산하여 결과를 반환한다.
+    """
+    total_with_tip = total_amount * (1 + tip_rate / 100)
+    per_person = total_with_tip / people_count
+    return total_with_tip, per_person
+
+
+def format_currency(value: float) -> str:
+    """
+    금액을 천 단위 콤마 포함 문자열로 포매팅한다.
+    """
+    if value == int(value):
+        return f"{int(value):,} 원"
+    return f"{value:,.1f} 원"
+
+
+# ──────────────────────────────────────────────
+# 스트림릿 UI 구성 (화이트톤 기반)
+# ──────────────────────────────────────────────
+
+# 페이지 제목 및 설정
+st.set_page_config(page_title="모임 회비 관리 계산기", layout="centered")
+
+st.title("회비 관리 계산기")
+st.caption("총 금액, 인원수, 팁 비율을 입력하고 제출하세요.")
+
+# 입력 영역 (카드 형태의 컨테이너 사용)
+with st.container():
+    st.subheader("입력 항목")
+
+    # 입력 필드들
+    total_input = st.text_input("총 금액 (원)", placeholder="예: 50,000")
+    people_input = st.number_input("인원수 (명)", min_value=1, value=1, step=1)
+    tip_input = st.number_input("팁 / 서비스 비율 (%)", min_value=0.0, value=0.0, step=0.5)
+
+    # 버튼 영역
+    col1, col2 = st.columns(2)
+    with col1:
+        submit_btn = st.button("제출", use_container_width=True, type="primary")
+    with col2:
+        reset_btn = st.button("초기화", use_container_width=True)
+
+# 계산 및 결과 표시
+if submit_btn:
+    try:
+        # 입력값 정제 및 검증
+        total_amount = float(total_input.replace(",", "").strip())
+
+        if total_amount <= 0:
+            st.error("총 금액은 0보다 커야 합니다.")
+        else:
+            # 계산 실행
+            total_with_tip, per_person = calculate(total_amount, people_input, tip_input)
+
+            # 결과 카드
+            st.divider()
+            st.subheader("계산 결과")
+
+            res_col1, res_col2 = st.columns(2)
+            with res_col1:
+                st.metric("팁 포함 총 금액", format_currency(total_with_tip))
+            with res_col2:
+                st.metric("1인당 금액", format_currency(per_person))
+
+    except ValueError:
+        st.error("총 금액에 올바른 숫자를 입력하세요.")
+
+if reset_btn:
+    st.rerun()  # 페이지 새로고침으로 초기화
